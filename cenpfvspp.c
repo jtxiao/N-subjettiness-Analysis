@@ -9,7 +9,7 @@
 #include <TProfile.h>
 #include <iostream>
 #include <math.h>
-#include "fastjet/contrib/SoftDrop.hh"
+// #include "fastjet/contrib/SoftDrop.hh"
 #include "softkiller.h"
 #include "fastjet/ClusterSequence.hh"
 #include "fastjet/PseudoJet.hh"
@@ -25,16 +25,26 @@
 #pragma link C++ class vector<TLorentzVector>;
 #endif
 
+using namespace std;
+using namespace fastjet;
+using namespace fastjet::contrib;
+
+class MyUserInfo: public PseudoJet::UserInfoBase{
+public:
+  MyUserInfo(const int & pdg_id_in) :
+  _pdg_id(pdg_id_in){}
+
+  int pdg_id() const { return _pdg_id;}
+  
+protected:
+  int _pdg_id;        
+};
 
 void cenpfvspp()
 {
   TH1::SetDefaultSumw2();
-  using namespace std;
-  using namespace fastjet;
-  using namespace fastjet::contrib;
-
-  HiForest * c = new HiForest("/mnt/hadoop/cms/store/user/dgulhan/pp2013/P01/v85/HiForest_pt80_merged/HiForest_pt80_PYTHIA_ppReco_JECv85_merged_forest_0.root","forest",cPP, 0);
-  // HiForest * c = new HiForest("/mnt/hadoop/cms/store/user/dgulhan/pp2013/data/prod24/hiForest_merged/HiForest_pp_Jet80_v8_PP2013_HiForest_PromptReco_JsonPP_Jet80_PPReco_merged_forest_0.root","forest",cPP, 0);
+  // HiForest * c = new HiForest("/mnt/hadoop/cms/store/user/dgulhan/Private_PYTHIA_2p76TeV_Track9Jet29_merged/HiForest_Private_PYTHIA_pthat80_track8_jet29_merged_forest_0.root","forest",cPP, 0);
+  HiForest * c = new HiForest("/mnt/hadoop/cms/store/user/dgulhan/pp2013/data/prod24/hiForest_merged/HiForest_pp_Jet80_v8_PP2013_HiForest_PromptReco_JsonPP_Jet80_PPReco_merged_forest_0.root","forest",cPP, 0);
 
   // c->LoadNoTrees();
   // c->hasTrackTree = true;
@@ -43,9 +53,24 @@ void cenpfvspp()
   // c->hasPFTree = true;
   // c->hasTowerTree = true;
   
-  TFile * outputfile = new TFile("taupythia.root", "recreate");
-  // TFile * outputfile = new TFile("taupp.root", "recreate");
-  // TFile * outputfile = new TFile("wom.root", "recreate");
+  // TFile * outputfile = new TFile("taupythia8.root", "recreate");
+  // TFile * outputfile = new TFile("taupp8.root", "recreate");
+  // TFile * outputfile = new TFile("ptpythia2.root", "recreate");
+  TFile * outputfile = new TFile("tautest.root", "recreate");
+  // TFile * outputfile = new TFile("ptpp2.root", "recreate");
+  
+  TH1D * canpt = new TH1D("canpt","Pt spectra of PF candidates; Pt; N", 35, 0.0001, 249.99999);
+  TH1D * trkcanpt = new TH1D("trkcanpt","Pt spectra of track PF candidates; Pt; N", 35, 0.0001, 249.99999);
+  TH1D * ECALcanpt = new TH1D("ECALcanpt","Pt spectra of ECAL PF candidates; Pt; N", 35, 0.0001, 249.99999);
+  TH1D * HCALcanpt = new TH1D("HCALcanpt","Pt spectra of HCAL PF candidates; Pt; N", 35, 0.0001, 249.99999);
+  
+  TH1D * jetpt = new TH1D("jetpt","Pt spectra of jets; Pt; N", 35, 0.0001, 299.99999);
+  
+  TH1D * jetFF = new TH1D("jetFF","Fragmentation Functions of jets; Pt; N", 20, 0.0001, 4.99999);
+  TH1D * jetFFc1 = new TH1D("jetFFc1","Fragmentation Functions of jets; Pt; N", 20, 0.0001, 4.99999);
+  TH1D * jetFFc2 = new TH1D("jetFFc2","Fragmentation Functions of jets; Pt; N", 20, 0.0001, 4.99999);
+  TH1D * jetFFc3 = new TH1D("jetFFc3","Fragmentation Functions of jets; Pt; N", 20, 0.0001, 4.99999);
+  TH1D * jetFFc4 = new TH1D("jetFFc4","Fragmentation Functions of jets; Pt; N", 20, 0.0001, 4.99999);
   
   TH1D * tauonec1 = new TH1D("tauonec1","N-subjettiness Distribution;;N", 25, 0.0001, 64.9999);
   TH1D * tauonec2 = new TH1D("tauonec2",";;", 25, 0.0001, 64.9999);
@@ -174,12 +199,6 @@ void cenpfvspp()
   TH1D * tauthreerb6c4 = new TH1D("tauthreerb6c4",";Tau Three/Tau Two;N", 25, 0.0001, 1.4999);
   
   
-  double beta_sd = 2.0;
-  double zcut = 0.1;
-  contrib::SoftDrop soft_drop(beta_sd, zcut);
-
-  
-  
   double beta = 1.0;
   double beta2 = 2.0;
   double beta3 = 0.5;
@@ -187,11 +206,11 @@ void cenpfvspp()
   double beta5 = 1.5;
   double beta6 = 3.0;
   
-  // double alpha = 1.0;
+  double alpha = 1.0;
   
-  // WinnerTakeAllRecombiner wta_alpha(alpha);
-  // WinnerTakeAllRecombiner *wta;
-  // wta = &wta_alpha;
+  WinnerTakeAllRecombiner wta_alpha(alpha);
+  WinnerTakeAllRecombiner *wta;
+  wta = &wta_alpha;
   
   UnnormalizedMeasure measureSpec1(beta);
   UnnormalizedMeasure measureSpec2(beta2);
@@ -201,9 +220,6 @@ void cenpfvspp()
   UnnormalizedMeasure measureSpec6(beta6);
   
   WTA_KT_Axes axisMode;
-  
-  InitEtaSKGrid();
-  InitPhiSKGrid();
 
   int bin = tauonec1->GetSize();
   int bins = bin - 2;
@@ -212,22 +228,13 @@ void cenpfvspp()
   Double_t R = 0.4;
   
   vector<PseudoJet>* jets_unsort = new vector<PseudoJet>;
+  vector<PseudoJet>* trkLvect = new vector<PseudoJet>;
   vector<PseudoJet>* jets = new vector<PseudoJet>;
-
-  
   for(Long64_t jentry = 0; jentry<nevents; jentry++){
     
     c->GetEntry(jentry);
     
-    if(!c->selectEvent())
-    continue;
-    
-    int cen_bin = c->evt.hiBin;
-    
-    double centrality = cen_bin/2;
-    
-    
-    InitSKGrid();
+    // if( !c->selectEvent() && !c->ismc) continue;
     
     
     if(jentry%100 == 0){
@@ -237,59 +244,35 @@ void cenpfvspp()
     
     for(int trkIter = 0; trkIter < c->pf.nPFpart; trkIter++)
     {     
-      if(c->pf.pfEta[trkIter]<2.3)
+      if(c->pf.pfEta[trkIter]<2.0)
       {
-        if(c->pf.pfEta[trkIter]>-2.3)
+        if(c->pf.pfEta[trkIter]>-2.0)
         {
           float VsPt = c->pf.pfPt[trkIter];
           float Eta = c->pf.pfEta[trkIter];
           float Phi = c->pf.pfPhi[trkIter];
           
-         
-          float eventSKPtCut = getSKPtCut(c->pf.nPFpart, &VsPt, &Phi, &Eta);
-          // cout<<eventSKPtCut<<endl;
-          if(c->pf.pfPt[trkIter] > eventSKPtCut)
-          {
-            
-            if(VsPt > 0.01){
-              tempVect.SetPtEtaPhiM(VsPt, Eta, Phi, 0);
-              jets_unsort->push_back(tempVect);
-            } 
+          
+          if(VsPt > 2){
+            tempVect.SetPtEtaPhiM(VsPt, Eta, Phi, 0);
+            trkLvect->push_back(tempVect);
+            PseudoJet p = trkLvect->back();
+            p.set_user_info(new MyUserInfo(c->pf.pfId[trkIter]));
+            jets_unsort->push_back(p);
           }
         }  
       }    
     }  
     
-    
-    // for(int trkIter = 0; trkIter < c->track.nTrk; trkIter++)
-    // {
-    // if(c->track.pPt[trkIter]>0.5)
-    // {
-    // if(c->track.pEta[trkIter]<2.3)
-    // {
-    // if(c->track.pEta[trkIter]>-2.3)
-    // {
-    
-    // if(c->track.pPt[trkIter] > 0)
-    // {
-    // tempVect.SetPtEtaPhiM(c->track.pPt[trkIter], c->track.pEta[trkIter], c->track.pPhi[trkIter], 0);
-    // jets_unsort->push_back(tempVect);
-    
-    // }
-    // }  
-    // }  
-    // }
-    // }  
-    
-    JetDefinition jet_def(cambridge_algorithm, R);
+    JetDefinition jet_def(cambridge_algorithm, R, wta, Best);
 
     ClusterSequence cs(*jets_unsort, jet_def);
     
     vector<PseudoJet> soft_jets = cs.inclusive_jets();
     // for(unsigned int j = 0; j<soft_jets.size();j++)
     // {
-      // PseudoJet dropped = soft_drop(soft_jets[j]);
-      // soft_jets[j] = dropped;
+    // PseudoJet dropped = soft_drop(soft_jets[j]);
+    // soft_jets[j] = dropped;
     // }
     vector<PseudoJet> jets = sorted_by_pt(soft_jets);
     int size = jets.size();
@@ -298,10 +281,37 @@ void cenpfvspp()
     
     for(unsigned int i =0; i<min(2,size); i++)
     {
-      // cout<<jets[i].perp();
       if(jets[i].perp() >100.0)
       { 
+        vector<PseudoJet> constituents = jets[i].constituents();
         
+        for(int constIter = 0; constIter < constituents.size(); constIter++)
+        {
+          const int & constID = constituents[constIter].user_info<MyUserInfo>().pdg_id();
+          double constPt = constituents[constIter].perp();
+          canpt->Fill(constPt);
+          double FF = log(jets[i].perp()/constPt);
+          jetFF->Fill(FF);
+          jetFFc1->Fill(FF);
+          jetFFc2->Fill(FF);   
+          jetFFc3->Fill(FF);          
+          jetFFc4->Fill(FF);
+          
+          if(abs(constID) <=3 && abs(constID) > 0)
+          {
+            trkcanpt->Fill(constPt);
+          }
+          if(abs(constID) == 4)
+          {
+            ECALcanpt->Fill(constPt);
+          }
+          if(abs(constID) <=7 && abs(constID) > 4)
+          {
+            HCALcanpt->Fill(constPt);
+          }
+        }
+        
+        jetpt->Fill(jets[i].perp());
         
         Nsubjettiness nSub1_beta1(1, axisMode, measureSpec1);
         double tau1 = nSub1_beta1(jets[i]);
@@ -375,1056 +385,459 @@ void cenpfvspp()
         
         
         tauonec1->Fill(tau1);
-        
-        
-        tauonec2->Fill(tau1);
-        
-        
-        tauonec3->Fill(tau1);
-        
-        
+        tauonec2->Fill(tau1);       
+        tauonec3->Fill(tau1);     
         tauonec4->Fill(tau1);
         
-        
-        
-        
-        tautwoc1->Fill(tau2);
-        
-        
-        tautwoc2->Fill(tau2);
-        
-        
-        tautwoc3->Fill(tau2);
-        
-        
+        tautwoc1->Fill(tau2);       
+        tautwoc2->Fill(tau2);       
+        tautwoc3->Fill(tau2);       
         tautwoc4->Fill(tau2);
         
-        
-        
-        
-        tauthreec1->Fill(tau3);
-        
-        
-        tauthreec2->Fill(tau3);
-        
-        
+        tauthreec1->Fill(tau3);      
+        tauthreec2->Fill(tau3);       
         tauthreec3->Fill(tau3);
-        
-        
         tauthreec4->Fill(tau3);
         
-        
-        
-        
-        tautworc1->Fill(tau2r);
-        
-        
-        tautworc2->Fill(tau2r);
-        
-        
-        tautworc3->Fill(tau2r);
-        
-        
+        tautworc1->Fill(tau2r);      
+        tautworc2->Fill(tau2r);        
+        tautworc3->Fill(tau2r);              
         tautworc4->Fill(tau2r);
         
-        
-        
-        
         tauthreerc1->Fill(tau3r);
-        
-
-        tauthreerc2->Fill(tau3r);
-        
-        
-        tauthreerc3->Fill(tau3r);
-        
-        
+        tauthreerc2->Fill(tau3r);      
+        tauthreerc3->Fill(tau3r);      
         tauthreerc4->Fill(tau3r);
         
-        
-        
-        
         tauoneb2c1->Fill(tau1_beta2);
-        
-
-        tauoneb2c2->Fill(tau1_beta2);
-        
-        
-        tauoneb2c3->Fill(tau1_beta2);
-        
-        
+        tauoneb2c2->Fill(tau1_beta2);  
+        tauoneb2c3->Fill(tau1_beta2);    
         tauoneb2c4->Fill(tau1_beta2);
-        
-        
-        
 
         tautwob2c1->Fill(tau2_beta2);
-        
-        
-        tautwob2c2->Fill(tau2_beta2);
-        
-        
-        tautwob2c3->Fill(tau2_beta2);
-        
-        
+        tautwob2c2->Fill(tau2_beta2);       
+        tautwob2c3->Fill(tau2_beta2);      
         tautwob2c4->Fill(tau2_beta2);
         
-        
-        
-
-        tauthreeb2c1->Fill(tau3_beta2);
-        
-        
-        tauthreeb2c2->Fill(tau3_beta2);
-        
-        
-        tauthreeb2c3->Fill(tau3_beta2);
-        
-        
+        tauthreeb2c1->Fill(tau3_beta2);        
+        tauthreeb2c2->Fill(tau3_beta2);       
+        tauthreeb2c3->Fill(tau3_beta2);        
         tauthreeb2c4->Fill(tau3_beta2);
-        
-        
 
-        tautworb2c1->Fill(tau2r_beta2);
-        
-        
-        tautworb2c2->Fill(tau2r_beta2);
-        
-        
-        tautworb2c3->Fill(tau2r_beta2);
-        
-        
+        tautworb2c1->Fill(tau2r_beta2);      
+        tautworb2c2->Fill(tau2r_beta2);       
+        tautworb2c3->Fill(tau2r_beta2);      
         tautworb2c4->Fill(tau2r_beta2);
         
-        
-        
-        
-        tauthreerb2c1->Fill(tau3r_beta2);
-        
-        
-        tauthreerb2c2->Fill(tau3r_beta2);
-        
-        
+        tauthreerb2c1->Fill(tau3r_beta2);    
+        tauthreerb2c2->Fill(tau3r_beta2);       
         tauthreerb2c3->Fill(tau3r_beta2);
-
         tauthreerb2c4->Fill(tau3r_beta2);
-        
-        
-        
-        
-        tauoneb3c1->Fill(tau1_beta3);
-        
-        
-        tauoneb3c2->Fill(tau1_beta3);
-        
-        
-        tauoneb3c3->Fill(tau1_beta3);
-        
-        
+
+        tauoneb3c1->Fill(tau1_beta3);      
+        tauoneb3c2->Fill(tau1_beta3);    
+        tauoneb3c3->Fill(tau1_beta3);       
         tauoneb3c4->Fill(tau1_beta3);
         
-        
-        
-        
-        tautwob3c1->Fill(tau2_beta3);
-        
-        
-        tautwob3c2->Fill(tau2_beta3);
-        
-        
-        tautwob3c3->Fill(tau2_beta3);
-        
-        
+        tautwob3c1->Fill(tau2_beta3);       
+        tautwob3c2->Fill(tau2_beta3);      
+        tautwob3c3->Fill(tau2_beta3);       
         tautwob3c4->Fill(tau2_beta3);
         
-        
-        
-        
-        tauthreeb3c1->Fill(tau3_beta3);
-        
-        
-        tauthreeb3c2->Fill(tau3_beta3);
-        
-        
-        tauthreeb3c3->Fill(tau3_beta3);
-        
-        
+        tauthreeb3c1->Fill(tau3_beta3);       
+        tauthreeb3c2->Fill(tau3_beta3);       
+        tauthreeb3c3->Fill(tau3_beta3);      
         tauthreeb3c4->Fill(tau3_beta3);
         
-        
-        
-        tautworb3c1->Fill(tau2r_beta3);
-        
-        
-        tautworb3c2->Fill(tau2r_beta3);
-        
-        
-        tautworb3c3->Fill(tau2r_beta3);
-        
-        
+        tautworb3c1->Fill(tau2r_beta3);       
+        tautworb3c2->Fill(tau2r_beta3);       
+        tautworb3c3->Fill(tau2r_beta3);      
         tautworb3c4->Fill(tau2r_beta3);
         
-        
-        
-        
-        tauthreerb3c1->Fill(tau3r_beta3);
-        
-        
-        tauthreerb3c2->Fill(tau3r_beta3);
-        
-        
-        tauthreerb3c3->Fill(tau3r_beta3);
-        
-        
+        tauthreerb3c1->Fill(tau3r_beta3);       
+        tauthreerb3c2->Fill(tau3r_beta3);       
+        tauthreerb3c3->Fill(tau3r_beta3);    
         tauthreerb3c4->Fill(tau3r_beta3);
         
-        
-        
-        
-        tauoneb4c1->Fill(tau1_beta4);
-        
-        
-        tauoneb4c2->Fill(tau1_beta4);
-        
-        
-        tauoneb4c3->Fill(tau1_beta4);
-        
-        
+        tauoneb4c1->Fill(tau1_beta4);       
+        tauoneb4c2->Fill(tau1_beta4);     
+        tauoneb4c3->Fill(tau1_beta4);      
         tauoneb4c4->Fill(tau1_beta4);
         
-        
-        
-        
-        tautwob4c1->Fill(tau2_beta4);
-        
-        
-        tautwob4c2->Fill(tau2_beta4);
-        
-        
-        tautwob4c3->Fill(tau2_beta4);
-        
-        
+        tautwob4c1->Fill(tau2_beta4);       
+        tautwob4c2->Fill(tau2_beta4);      
+        tautwob4c3->Fill(tau2_beta4);       
         tautwob4c4->Fill(tau2_beta4);
         
-        
-        
-        
-        tauthreeb4c1->Fill(tau3_beta4);
-        
-        
-        tauthreeb4c2->Fill(tau3_beta4);
-        
-        
-        tauthreeb4c3->Fill(tau3_beta4);
-        
-        
+        tauthreeb4c1->Fill(tau3_beta4);       
+        tauthreeb4c2->Fill(tau3_beta4);       
+        tauthreeb4c3->Fill(tau3_beta4);      
         tauthreeb4c4->Fill(tau3_beta4);
         
-        
-        
-        
-        tautworb4c1->Fill(tau2r_beta4);
-        
-        
-        tautworb4c2->Fill(tau2r_beta4);
-        
-        
-        tautworb4c3->Fill(tau2r_beta4);
-        
-        
+        tautworb4c1->Fill(tau2r_beta4);       
+        tautworb4c2->Fill(tau2r_beta4);       
+        tautworb4c3->Fill(tau2r_beta4);       
         tautworb4c4->Fill(tau2r_beta4);
         
-        
-        
-
-        tauthreerb4c1->Fill(tau3r_beta4);
-        
-        
-        tauthreerb4c2->Fill(tau3r_beta4);
-        
-        
-        tauthreerb4c3->Fill(tau3r_beta4);
-        
-        
+        tauthreerb4c1->Fill(tau3r_beta4);   
+        tauthreerb4c2->Fill(tau3r_beta4);      
+        tauthreerb4c3->Fill(tau3r_beta4);       
         tauthreerb4c4->Fill(tau3r_beta4);
         
-        
-        
-        
-        tauoneb5c1->Fill(tau1_beta5);
-        
-        
-        tauoneb5c2->Fill(tau1_beta5);
-        
-        
-        tauoneb5c3->Fill(tau1_beta5);
-        
-        
+        tauoneb5c1->Fill(tau1_beta5);       
+        tauoneb5c2->Fill(tau1_beta5);     
+        tauoneb5c3->Fill(tau1_beta5);     
         tauoneb5c4->Fill(tau1_beta5);
         
-        
-        
-        
-        tautwob5c1->Fill(tau2_beta5);
-        
-        
-        tautwob5c2->Fill(tau2_beta5);
-        
-        
-        tautwob5c3->Fill(tau2_beta5);
-        
-        
+        tautwob5c1->Fill(tau2_beta5);      
+        tautwob5c2->Fill(tau2_beta5);       
+        tautwob5c3->Fill(tau2_beta5);       
         tautwob5c4->Fill(tau2_beta5);
         
-        
-        
-        
-        tauthreeb5c1->Fill(tau3_beta5);
-        
-        
-        tauthreeb5c2->Fill(tau3_beta5);
-        
-        
-        tauthreeb5c3->Fill(tau3_beta5);
-        
-        
+        tauthreeb5c1->Fill(tau3_beta5);      
+        tauthreeb5c2->Fill(tau3_beta5);       
+        tauthreeb5c3->Fill(tau3_beta5);       
         tauthreeb5c4->Fill(tau3_beta5);
         
-        
-        
-        
         tautworb5c1->Fill(tau2r_beta5);
-        
-        
-        tautworb5c2->Fill(tau2r_beta5);
-        
-        
+        tautworb5c2->Fill(tau2r_beta5); 
         tautworb5c3->Fill(tau2r_beta5);
-        
-        
         tautworb5c4->Fill(tau2r_beta5);
         
-        
-        
-        
-        tauthreerb5c1->Fill(tau3r_beta5);
-        
-        
-        tauthreerb5c2->Fill(tau3r_beta5);
-        
-        
-        tauthreerb5c3->Fill(tau3r_beta5);
-        
-        
+        tauthreerb5c1->Fill(tau3r_beta5);       
+        tauthreerb5c2->Fill(tau3r_beta5);      
+        tauthreerb5c3->Fill(tau3r_beta5);     
         tauthreerb5c4->Fill(tau3r_beta5);
         
-        
-        
-        
-        tauoneb6c1->Fill(tau1_beta6);
-        
-        
-        tauoneb6c2->Fill(tau1_beta6);
-        
-        
-        tauoneb6c3->Fill(tau1_beta6);
-        
-        
+        tauoneb6c1->Fill(tau1_beta6);    
+        tauoneb6c2->Fill(tau1_beta6);      
+        tauoneb6c3->Fill(tau1_beta6);       
         tauoneb6c4->Fill(tau1_beta6);
         
-        
-        
-        
-        tautwob6c1->Fill(tau2_beta6);
-        
-        
-        tautwob6c2->Fill(tau2_beta6);
-        
-        
-        tautwob6c3->Fill(tau2_beta6);
-        
-        
+        tautwob6c1->Fill(tau2_beta6);       
+        tautwob6c2->Fill(tau2_beta6);       
+        tautwob6c3->Fill(tau2_beta6);      
         tautwob6c4->Fill(tau2_beta6);
         
-        
-        
-        
-        tauthreeb6c1->Fill(tau3_beta6);
-        
-        
-        tauthreeb6c2->Fill(tau3_beta6);
-        
-        
-        tauthreeb6c3->Fill(tau3_beta6);
-        
-        
+        tauthreeb6c1->Fill(tau3_beta6);        
+        tauthreeb6c2->Fill(tau3_beta6);  
+        tauthreeb6c3->Fill(tau3_beta6);      
         tauthreeb6c4->Fill(tau3_beta6);
         
-        
-        
-        
-        tautworb6c1->Fill(tau2r_beta6);
-        
-        
-        tautworb6c2->Fill(tau2r_beta6);
-        
-        
-        tautworb6c3->Fill(tau2r_beta6);
-        
-        
+        tautworb6c1->Fill(tau2r_beta6);       
+        tautworb6c2->Fill(tau2r_beta6);       
+        tautworb6c3->Fill(tau2r_beta6);       
         tautworb6c4->Fill(tau2r_beta6);
         
-        
-        
-        
-        tauthreerb6c1->Fill(tau3r_beta6);
-        
-        
-        tauthreerb6c2->Fill(tau3r_beta6);
-        
-        
-        tauthreerb6c3->Fill(tau3r_beta6);
-        
-        
-        tauthreerb6c4->Fill(tau3r_beta6);
-        
-        
-      }
-      
-      
+        tauthreerb6c1->Fill(tau3r_beta6);        
+        tauthreerb6c2->Fill(tau3r_beta6);       
+        tauthreerb6c3->Fill(tau3r_beta6);             
+        tauthreerb6c4->Fill(tau3r_beta6);   
+      }     
     }
     jets_unsort->clear();
-
   }
   
+  
+  double norm1canpt = 1.0/jetpt->GetEntries();
+  canpt->Scale(norm1canpt);
+  double norm1trkcanpt = 1.0/jetpt->GetEntries();
+  trkcanpt->Scale(norm1canpt);
+  double norm1ECALcanpt = 1.0/jetpt->GetEntries();
+  ECALcanpt->Scale(norm1canpt);
+  double norm1HCALcanpt = 1.0/jetpt->GetEntries();
+  HCALcanpt->Scale(norm1canpt);
+  
+  double norm1jetpt = 1.0/jetpt->GetEntries();
+  jetpt->Scale(norm1jetpt);
+  
+  double norm1FF = 1.0/jetpt->GetEntries();
+  jetFF->Scale(norm1FF);
+  jetFFc1->Scale(norm1FF);
+  jetFFc2->Scale(norm1FF);
+  jetFFc3->Scale(norm1FF);
+  jetFFc4->Scale(norm1FF);
 
-  double norm1c1 = 1.0/tauonec1->Integral(0,bins);
+  double norm1c1 = 1.0/tauonec1->Integral();
   tauonec1->Scale(norm1c1);
-  double norm1c2 = 1.0/tauonec2->Integral(0,bins);
+  double norm1c2 = 1.0/tauonec2->Integral();
   tauonec2->Scale(norm1c2);
-  double norm1c3 = 1.0/tauonec3->Integral(0,bins);
+  double norm1c3 = 1.0/tauonec3->Integral();
   tauonec3->Scale(norm1c3);
-  double norm1c4 = 1.0/tauonec4->Integral(0,bins);
+  double norm1c4 = 1.0/tauonec4->Integral();
   tauonec4->Scale(norm1c4);
   
-  double norm2c1 = 1.0/tautwoc1->Integral(0,bins);
+  double norm2c1 = 1.0/tautwoc1->Integral();
   tautwoc1->Scale(norm2c1);  
-  double norm2c2 = 1.0/tautwoc2->Integral(0,bins);
+  double norm2c2 = 1.0/tautwoc2->Integral();
   tautwoc2->Scale(norm2c2);  
-  double norm2c3 = 1.0/tautwoc3->Integral(0,bins);
+  double norm2c3 = 1.0/tautwoc3->Integral();
   tautwoc3->Scale(norm2c3);  
-  double norm2c4 = 1.0/tautwoc4->Integral(0,bins);
+  double norm2c4 = 1.0/tautwoc4->Integral();
   tautwoc4->Scale(norm2c4);
   
-  double norm3c1 = 1.0/tauthreec1->Integral(0,bins);
+  double norm3c1 = 1.0/tauthreec1->Integral();
   tauthreec1->Scale(norm3c1);  
-  double norm3c2 = 1.0/tauthreec2->Integral(0,bins);
+  double norm3c2 = 1.0/tauthreec2->Integral();
   tauthreec2->Scale(norm3c2);  
-  double norm3c3 = 1.0/tauthreec3->Integral(0,bins);
+  double norm3c3 = 1.0/tauthreec3->Integral();
   tauthreec3->Scale(norm3c3);  
-  double norm3c4 = 1.0/tauthreec4->Integral(0,bins);
+  double norm3c4 = 1.0/tauthreec4->Integral();
   tauthreec4->Scale(norm3c4);
   
-  double norm4c1 = 1.0/tautworc1->Integral(0,bins);
+  double norm4c1 = 1.0/tautworc1->Integral();
   tautworc1->Scale(norm4c1);  
-  double norm4c2 = 1.0/tautworc2->Integral(0,bins);
+  double norm4c2 = 1.0/tautworc2->Integral();
   tautworc2->Scale(norm4c2);  
-  double norm4c3 = 1.0/tautworc3->Integral(0,bins);
+  double norm4c3 = 1.0/tautworc3->Integral();
   tautworc3->Scale(norm4c3);  
-  double norm4c4 = 1.0/tautworc4->Integral(0,bins);
+  double norm4c4 = 1.0/tautworc4->Integral();
   tautworc4->Scale(norm4c4);
   
-  double norm5c1 = 1.0/tauthreerc1->Integral(0,bins);
+  double norm5c1 = 1.0/tauthreerc1->Integral();
   tauthreerc1->Scale(norm5c1);  
-  double norm5c2 = 1.0/tauthreerc2->Integral(0,bins);
+  double norm5c2 = 1.0/tauthreerc2->Integral();
   tauthreerc2->Scale(norm5c2);  
-  double norm5c3 = 1.0/tauthreerc3->Integral(0,bins);
+  double norm5c3 = 1.0/tauthreerc3->Integral();
   tauthreerc3->Scale(norm5c3);  
-  double norm5c4 = 1.0/tauthreerc4->Integral(0,bins);
+  double norm5c4 = 1.0/tauthreerc4->Integral();
   tauthreerc4->Scale(norm5c4);
 
   
-  double norm1b2c1 = 1.0/tauoneb2c1->Integral(0,bins);
+  double norm1b2c1 = 1.0/tauoneb2c1->Integral();
   tauoneb2c1->Scale(norm1b2c1);  
-  double norm1b2c2 = 1.0/tauoneb2c2->Integral(0,bins);
+  double norm1b2c2 = 1.0/tauoneb2c2->Integral();
   tauoneb2c2->Scale(norm1b2c2);  
-  double norm1b2c3 = 1.0/tauoneb2c3->Integral(0,bins);
+  double norm1b2c3 = 1.0/tauoneb2c3->Integral();
   tauoneb2c3->Scale(norm1b2c3);  
-  double norm1b2c4 = 1.0/tauoneb2c4->Integral(0,bins);
+  double norm1b2c4 = 1.0/tauoneb2c4->Integral();
   tauoneb2c4->Scale(norm1b2c4);
   
-  double norm2b2c1 = 1.0/tautwob2c1->Integral(0,bins);
+  double norm2b2c1 = 1.0/tautwob2c1->Integral();
   tautwob2c1->Scale(norm2b2c1);  
-  double norm2b2c2 = 1.0/tautwob2c2->Integral(0,bins);
+  double norm2b2c2 = 1.0/tautwob2c2->Integral();
   tautwob2c2->Scale(norm2b2c2);  
-  double norm2b2c3 = 1.0/tautwob2c3->Integral(0,bins);
+  double norm2b2c3 = 1.0/tautwob2c3->Integral();
   tautwob2c3->Scale(norm2b2c3);  
-  double norm2b2c4 = 1.0/tautwob2c4->Integral(0,bins);
+  double norm2b2c4 = 1.0/tautwob2c4->Integral();
   tautwob2c4->Scale(norm2b2c4);
   
-  double norm3b2c1 = 1.0/tauthreeb2c1->Integral(0,bins);
+  double norm3b2c1 = 1.0/tauthreeb2c1->Integral();
   tauthreeb2c1->Scale(norm3b2c1);  
-  double norm3b2c2 = 1.0/tauthreeb2c2->Integral(0,bins);
+  double norm3b2c2 = 1.0/tauthreeb2c2->Integral();
   tauthreeb2c2->Scale(norm3b2c2);  
-  double norm3b2c3 = 1.0/tauthreeb2c3->Integral(0,bins);
+  double norm3b2c3 = 1.0/tauthreeb2c3->Integral();
   tauthreeb2c3->Scale(norm3b2c3);  
-  double norm3b2c4 = 1.0/tauthreeb2c4->Integral(0,bins);
+  double norm3b2c4 = 1.0/tauthreeb2c4->Integral();
   tauthreeb2c4->Scale(norm3b2c4);
   
-  double norm4b2c1 = 1.0/tautworb2c1->Integral(0,bins);
+  double norm4b2c1 = 1.0/tautworb2c1->Integral();
   tautworb2c1->Scale(norm4b2c1);  
-  double norm4b2c2 = 1.0/tautworb2c2->Integral(0,bins);
+  double norm4b2c2 = 1.0/tautworb2c2->Integral();
   tautworb2c2->Scale(norm4b2c2);  
-  double norm4b2c3 = 1.0/tautworb2c3->Integral(0,bins);
+  double norm4b2c3 = 1.0/tautworb2c3->Integral();
   tautworb2c3->Scale(norm4b2c3);  
-  double norm4b2c4 = 1.0/tautworb2c4->Integral(0,bins);
+  double norm4b2c4 = 1.0/tautworb2c4->Integral();
   tautworb2c4->Scale(norm4b2c4);
   
-  double norm5b2c1 = 1.0/tauthreerb2c1->Integral(0,bins);
+  double norm5b2c1 = 1.0/tauthreerb2c1->Integral();
   tauthreerb2c1->Scale(norm5b2c1);  
-  double norm5b2c2 = 1.0/tauthreerb2c2->Integral(0,bins);
+  double norm5b2c2 = 1.0/tauthreerb2c2->Integral();
   tauthreerb2c2->Scale(norm5b2c2);  
-  double norm5b2c3 = 1.0/tauthreerb2c3->Integral(0,bins);
+  double norm5b2c3 = 1.0/tauthreerb2c3->Integral();
   tauthreerb2c3->Scale(norm5b2c3);  
-  double norm5b2c4 = 1.0/tauthreerb2c4->Integral(0,bins);
+  double norm5b2c4 = 1.0/tauthreerb2c4->Integral();
   tauthreerb2c4->Scale(norm5b2c4);
   
   
-  double norm1b3c1 = 1.0/tauoneb3c1->Integral(0,bins);
+  double norm1b3c1 = 1.0/tauoneb3c1->Integral();
   tauoneb3c1->Scale(norm1b3c1);  
-  double norm1b3c2 = 1.0/tauoneb3c2->Integral(0,bins);
+  double norm1b3c2 = 1.0/tauoneb3c2->Integral();
   tauoneb3c2->Scale(norm1b3c2);  
-  double norm1b3c3 = 1.0/tauoneb3c3->Integral(0,bins);
+  double norm1b3c3 = 1.0/tauoneb3c3->Integral();
   tauoneb3c3->Scale(norm1b3c3);  
-  double norm1b3c4 = 1.0/tauoneb3c4->Integral(0,bins);
+  double norm1b3c4 = 1.0/tauoneb3c4->Integral();
   tauoneb3c4->Scale(norm1b3c4);
   
-  double norm2b3c1 = 1.0/tautwob3c1->Integral(0,bins);
+  double norm2b3c1 = 1.0/tautwob3c1->Integral();
   tautwob3c1->Scale(norm2b3c1);  
-  double norm2b3c2 = 1.0/tautwob3c2->Integral(0,bins);
+  double norm2b3c2 = 1.0/tautwob3c2->Integral();
   tautwob3c2->Scale(norm2b3c2);  
-  double norm2b3c3 = 1.0/tautwob3c3->Integral(0,bins);
+  double norm2b3c3 = 1.0/tautwob3c3->Integral();
   tautwob3c3->Scale(norm2b3c3);  
-  double norm2b3c4 = 1.0/tautwob3c4->Integral(0,bins);
+  double norm2b3c4 = 1.0/tautwob3c4->Integral();
   tautwob3c4->Scale(norm2b3c4);
   
-  double norm3b3c1 = 1.0/tauthreeb3c1->Integral(0,bins);
+  double norm3b3c1 = 1.0/tauthreeb3c1->Integral();
   tauthreeb3c1->Scale(norm3b3c1);  
-  double norm3b3c2 = 1.0/tauthreeb3c2->Integral(0,bins);
+  double norm3b3c2 = 1.0/tauthreeb3c2->Integral();
   tauthreeb3c2->Scale(norm3b3c2);  
-  double norm3b3c3 = 1.0/tauthreeb3c3->Integral(0,bins);
+  double norm3b3c3 = 1.0/tauthreeb3c3->Integral();
   tauthreeb3c3->Scale(norm3b3c3);  
-  double norm3b3c4 = 1.0/tauthreeb3c4->Integral(0,bins);
+  double norm3b3c4 = 1.0/tauthreeb3c4->Integral();
   tauthreeb3c4->Scale(norm3b3c4);
   
-  double norm4b3c1 = 1.0/tautworb3c1->Integral(0,bins);
+  double norm4b3c1 = 1.0/tautworb3c1->Integral();
   tautworb3c1->Scale(norm4b3c1);  
-  double norm4b3c2 = 1.0/tautworb3c2->Integral(0,bins);
+  double norm4b3c2 = 1.0/tautworb3c2->Integral();
   tautworb3c2->Scale(norm4b3c2);  
-  double norm4b3c3 = 1.0/tautworb3c3->Integral(0,bins);
+  double norm4b3c3 = 1.0/tautworb3c3->Integral();
   tautworb3c3->Scale(norm4b3c3);  
-  double norm4b3c4 = 1.0/tautworb3c4->Integral(0,bins);
+  double norm4b3c4 = 1.0/tautworb3c4->Integral();
   tautworb3c4->Scale(norm4b3c4);
   
-  double norm5b3c1 = 1.0/tauthreerb3c1->Integral(0,bins);
+  double norm5b3c1 = 1.0/tauthreerb3c1->Integral();
   tauthreerb3c1->Scale(norm5b3c1);  
-  double norm5b3c2 = 1.0/tauthreerb3c2->Integral(0,bins);
+  double norm5b3c2 = 1.0/tauthreerb3c2->Integral();
   tauthreerb3c2->Scale(norm5b3c2);  
-  double norm5b3c3 = 1.0/tauthreerb3c3->Integral(0,bins);
+  double norm5b3c3 = 1.0/tauthreerb3c3->Integral();
   tauthreerb3c3->Scale(norm5b3c3);  
-  double norm5b3c4 = 1.0/tauthreerb3c4->Integral(0,bins);
+  double norm5b3c4 = 1.0/tauthreerb3c4->Integral();
   tauthreerb3c4->Scale(norm5b3c4);
   
   
-  double norm1b4c1 = 1.0/tauoneb4c1->Integral(0,bins);
+  double norm1b4c1 = 1.0/tauoneb4c1->Integral();
   tauoneb4c1->Scale(norm1b4c1);  
-  double norm1b4c2 = 1.0/tauoneb4c2->Integral(0,bins);
+  double norm1b4c2 = 1.0/tauoneb4c2->Integral();
   tauoneb4c2->Scale(norm1b4c2);  
-  double norm1b4c3 = 1.0/tauoneb4c3->Integral(0,bins);
+  double norm1b4c3 = 1.0/tauoneb4c3->Integral();
   tauoneb4c3->Scale(norm1b4c3);  
-  double norm1b4c4 = 1.0/tauoneb4c4->Integral(0,bins);
+  double norm1b4c4 = 1.0/tauoneb4c4->Integral();
   tauoneb4c4->Scale(norm1b4c4);
   
-  double norm2b4c1 = 1.0/tautwob4c1->Integral(0,bins);
+  double norm2b4c1 = 1.0/tautwob4c1->Integral();
   tautwob4c1->Scale(norm2b4c1);  
-  double norm2b4c2 = 1.0/tautwob4c2->Integral(0,bins);
+  double norm2b4c2 = 1.0/tautwob4c2->Integral();
   tautwob4c2->Scale(norm2b4c2);  
-  double norm2b4c3 = 1.0/tautwob4c3->Integral(0,bins);
+  double norm2b4c3 = 1.0/tautwob4c3->Integral();
   tautwob4c3->Scale(norm2b4c3);  
-  double norm2b4c4 = 1.0/tautwob4c4->Integral(0,bins);
+  double norm2b4c4 = 1.0/tautwob4c4->Integral();
   tautwob4c4->Scale(norm2b4c4);
   
-  double norm3b4c1 = 1.0/tauthreeb4c1->Integral(0,bins);
+  double norm3b4c1 = 1.0/tauthreeb4c1->Integral();
   tauthreeb4c1->Scale(norm3b4c1);  
-  double norm3b4c2 = 1.0/tauthreeb4c2->Integral(0,bins);
+  double norm3b4c2 = 1.0/tauthreeb4c2->Integral();
   tauthreeb4c2->Scale(norm3b4c2);  
-  double norm3b4c3 = 1.0/tauthreeb4c3->Integral(0,bins);
+  double norm3b4c3 = 1.0/tauthreeb4c3->Integral();
   tauthreeb4c3->Scale(norm3b4c3);  
-  double norm3b4c4 = 1.0/tauthreeb4c4->Integral(0,bins);
+  double norm3b4c4 = 1.0/tauthreeb4c4->Integral();
   tauthreeb4c4->Scale(norm3b4c4);
   
-  double norm4b4c1 = 1.0/tautworb4c1->Integral(0,bins);
+  double norm4b4c1 = 1.0/tautworb4c1->Integral();
   tautworb4c1->Scale(norm4b4c1);  
-  double norm4b4c2 = 1.0/tautworb4c2->Integral(0,bins);
+  double norm4b4c2 = 1.0/tautworb4c2->Integral();
   tautworb4c2->Scale(norm4b4c2);  
-  double norm4b4c3 = 1.0/tautworb4c3->Integral(0,bins);
+  double norm4b4c3 = 1.0/tautworb4c3->Integral();
   tautworb4c3->Scale(norm4b4c3);  
-  double norm4b4c4 = 1.0/tautworb4c4->Integral(0,bins);
+  double norm4b4c4 = 1.0/tautworb4c4->Integral();
   tautworb4c4->Scale(norm4b4c4);
   
-  double norm5b4c1 = 1.0/tauthreerb4c1->Integral(0,bins);
+  double norm5b4c1 = 1.0/tauthreerb4c1->Integral();
   tauthreerb4c1->Scale(norm5b4c1);  
-  double norm5b4c2 = 1.0/tauthreerb4c2->Integral(0,bins);
+  double norm5b4c2 = 1.0/tauthreerb4c2->Integral();
   tauthreerb4c2->Scale(norm5b4c2);  
-  double norm5b4c3 = 1.0/tauthreerb4c3->Integral(0,bins);
+  double norm5b4c3 = 1.0/tauthreerb4c3->Integral();
   tauthreerb4c3->Scale(norm5b4c3);  
-  double norm5b4c4 = 1.0/tauthreerb4c4->Integral(0,bins);
+  double norm5b4c4 = 1.0/tauthreerb4c4->Integral();
   tauthreerb4c4->Scale(norm5b4c4);
 
   
-  double norm1b5c1 = 1.0/tauoneb5c1->Integral(0,bins);
+  double norm1b5c1 = 1.0/tauoneb5c1->Integral();
   tauoneb5c1->Scale(norm1b5c1);  
-  double norm1b5c2 = 1.0/tauoneb5c2->Integral(0,bins);
+  double norm1b5c2 = 1.0/tauoneb5c2->Integral();
   tauoneb5c2->Scale(norm1b5c2);  
-  double norm1b5c3 = 1.0/tauoneb5c3->Integral(0,bins);
+  double norm1b5c3 = 1.0/tauoneb5c3->Integral();
   tauoneb5c3->Scale(norm1b5c3);  
-  double norm1b5c4 = 1.0/tauoneb5c4->Integral(0,bins);
+  double norm1b5c4 = 1.0/tauoneb5c4->Integral();
   tauoneb5c4->Scale(norm1b5c4);
   
-  double norm2b5c1 = 1.0/tautwob5c1->Integral(0,bins);
+  double norm2b5c1 = 1.0/tautwob5c1->Integral();
   tautwob5c1->Scale(norm2b5c1);  
-  double norm2b5c2 = 1.0/tautwob5c2->Integral(0,bins);
+  double norm2b5c2 = 1.0/tautwob5c2->Integral();
   tautwob5c2->Scale(norm2b5c2);  
-  double norm2b5c3 = 1.0/tautwob5c3->Integral(0,bins);
+  double norm2b5c3 = 1.0/tautwob5c3->Integral();
   tautwob5c3->Scale(norm2b5c3);  
-  double norm2b5c4 = 1.0/tautwob5c4->Integral(0,bins);
+  double norm2b5c4 = 1.0/tautwob5c4->Integral();
   tautwob5c4->Scale(norm2b5c4);
   
-  double norm3b5c1 = 1.0/tauthreeb5c1->Integral(0,bins);
+  double norm3b5c1 = 1.0/tauthreeb5c1->Integral();
   tauthreeb5c1->Scale(norm3b5c1);  
-  double norm3b5c2 = 1.0/tauthreeb5c2->Integral(0,bins);
+  double norm3b5c2 = 1.0/tauthreeb5c2->Integral();
   tauthreeb5c2->Scale(norm3b5c2);  
-  double norm3b5c3 = 1.0/tauthreeb5c3->Integral(0,bins);
+  double norm3b5c3 = 1.0/tauthreeb5c3->Integral();
   tauthreeb5c3->Scale(norm3b5c3);  
-  double norm3b5c4 = 1.0/tauthreeb5c4->Integral(0,bins);
+  double norm3b5c4 = 1.0/tauthreeb5c4->Integral();
   tauthreeb5c4->Scale(norm3b5c4);
   
-  double norm4b5c1 = 1.0/tautworb5c1->Integral(0,bins);
+  double norm4b5c1 = 1.0/tautworb5c1->Integral();
   tautworb5c1->Scale(norm4b5c1);  
-  double norm4b5c2 = 1.0/tautworb5c2->Integral(0,bins);
+  double norm4b5c2 = 1.0/tautworb5c2->Integral();
   tautworb5c2->Scale(norm4b5c2);  
-  double norm4b5c3= 1.0/tautworb5c3->Integral(0,bins);
+  double norm4b5c3= 1.0/tautworb5c3->Integral();
   tautworb5c3->Scale(norm4b5c3);  
-  double norm4b5c4 = 1.0/tautworb5c4->Integral(0,bins);
+  double norm4b5c4 = 1.0/tautworb5c4->Integral();
   tautworb5c4->Scale(norm4b5c4);
   
-  double norm5b5c1 = 1.0/tauthreerb5c1->Integral(0,bins);
+  double norm5b5c1 = 1.0/tauthreerb5c1->Integral();
   tauthreerb5c1->Scale(norm5b5c1);  
-  double norm5b5c2 = 1.0/tauthreerb5c2->Integral(0,bins);
+  double norm5b5c2 = 1.0/tauthreerb5c2->Integral();
   tauthreerb5c2->Scale(norm5b5c2);  
-  double norm5b5c3 = 1.0/tauthreerb5c3->Integral(0,bins);
+  double norm5b5c3 = 1.0/tauthreerb5c3->Integral();
   tauthreerb5c3->Scale(norm5b5c3);  
-  double norm5b5c4 = 1.0/tauthreerb5c4->Integral(0,bins);
+  double norm5b5c4 = 1.0/tauthreerb5c4->Integral();
   tauthreerb5c4->Scale(norm5b5c4);
   
   
-  double norm1b6c1 = 1.0/tauoneb6c1->Integral(0,bins);
+  double norm1b6c1 = 1.0/tauoneb6c1->Integral();
   tauoneb6c1->Scale(norm1b6c1);  
-  double norm1b6c2 = 1.0/tauoneb6c2->Integral(0,bins);
+  double norm1b6c2 = 1.0/tauoneb6c2->Integral();
   tauoneb6c2->Scale(norm1b6c2);  
-  double norm1b6c3 = 1.0/tauoneb6c3->Integral(0,bins);
+  double norm1b6c3 = 1.0/tauoneb6c3->Integral();
   tauoneb6c3->Scale(norm1b6c3);  
-  double norm1b6c4 = 1.0/tauoneb6c4->Integral(0,bins);
+  double norm1b6c4 = 1.0/tauoneb6c4->Integral();
   tauoneb6c4->Scale(norm1b6c4);
   
-  double norm2b6c1 = 1.0/tautwob6c1->Integral(0,bins);
+  double norm2b6c1 = 1.0/tautwob6c1->Integral();
   tautwob6c1->Scale(norm2b6c1);  
-  double norm2b6c2 = 1.0/tautwob6c2->Integral(0,bins);
+  double norm2b6c2 = 1.0/tautwob6c2->Integral();
   tautwob6c2->Scale(norm2b6c2);  
-  double norm2b6c3 = 1.0/tautwob6c3->Integral(0,bins);
+  double norm2b6c3 = 1.0/tautwob6c3->Integral();
   tautwob6c3->Scale(norm2b6c3);  
-  double norm2b6c4 = 1.0/tautwob6c4->Integral(0,bins);
+  double norm2b6c4 = 1.0/tautwob6c4->Integral();
   tautwob6c4->Scale(norm2b6c4);
   
-  double norm3b6c1 = 1.0/tauthreeb6c1->Integral(0,bins);
+  double norm3b6c1 = 1.0/tauthreeb6c1->Integral();
   tauthreeb6c1->Scale(norm3b6c1);  
-  double norm3b6c2 = 1.0/tauthreeb6c2->Integral(0,bins);
+  double norm3b6c2 = 1.0/tauthreeb6c2->Integral();
   tauthreeb6c2->Scale(norm3b6c2);  
-  double norm3b6c3 = 1.0/tauthreeb6c3->Integral(0,bins);
+  double norm3b6c3 = 1.0/tauthreeb6c3->Integral();
   tauthreeb6c3->Scale(norm3b6c3);  
-  double norm3b6c4 = 1.0/tauthreeb6c4->Integral(0,bins);
+  double norm3b6c4 = 1.0/tauthreeb6c4->Integral();
   tauthreeb6c4->Scale(norm3b6c4);
   
-  double norm4b6c1 = 1.0/tautworb6c1->Integral(0,bins);
+  double norm4b6c1 = 1.0/tautworb6c1->Integral();
   tautworb6c1->Scale(norm4b6c1);  
-  double norm4b6c2 = 1.0/tautworb6c2->Integral(0,bins);
+  double norm4b6c2 = 1.0/tautworb6c2->Integral();
   tautworb6c2->Scale(norm4b6c2);  
-  double norm4b6c3 = 1.0/tautworb6c3->Integral(0,bins);
+  double norm4b6c3 = 1.0/tautworb6c3->Integral();
   tautworb6c3->Scale(norm4b6c3);  
-  double norm4b6c4 = 1.0/tautworb6c4->Integral(0,bins);
+  double norm4b6c4 = 1.0/tautworb6c4->Integral();
   tautworb6c4->Scale(norm4b6c4);
   
-  double norm5b6c1 = 1.0/tauthreerb6c1->Integral(0,bins);
+  double norm5b6c1 = 1.0/tauthreerb6c1->Integral();
   tauthreerb6c1->Scale(norm5b6c1);  
-  double norm5b6c2 = 1.0/tauthreerb6c2->Integral(0,bins);
+  double norm5b6c2 = 1.0/tauthreerb6c2->Integral();
   tauthreerb6c2->Scale(norm5b6c2);  
-  double norm5b6c3 = 1.0/tauthreerb6c3->Integral(0,bins);
+  double norm5b6c3 = 1.0/tauthreerb6c3->Integral();
   tauthreerb6c3->Scale(norm5b6c3);  
-  double norm5b6c4 = 1.0/tauthreerb6c4->Integral(0,bins);
+  double norm5b6c4 = 1.0/tauthreerb6c4->Integral();
   tauthreerb6c4->Scale(norm5b6c4);
-
-  TCanvas * c1 = new TCanvas();
-  c1->Divide(4,1);
-  c1->cd(1);
-  tauonec1->Draw();  
-  c1->cd(2);
-  tauonec2->Draw();  
-  c1->cd(3);
-  tauonec3->Draw();
-  c1->cd(4);  
-  tauonec4->Draw();
-  
-  TCanvas * c2 = new TCanvas();
-  c2->Divide(4,1);
-  c2->cd(1);
-  tautwoc1->Draw();  
-  c2->cd(2);
-  tautwoc2->Draw();  
-  c2->cd(3);
-  tautwoc3->Draw();  
-  c2->cd(4);
-  tautwoc4->Draw();
-  
-  TCanvas * c3 = new TCanvas();
-  c3->Divide(4,1);
-  c3->cd(1);
-  tauthreec1->Draw();
-  c3->cd(2);
-  tauthreec2->Draw();
-  c3->cd(3);
-  tauthreec3->Draw();
-  c3->cd(4);
-  tauthreec4->Draw();
-  
-  TCanvas * c4 = new TCanvas();
-  c3->Divide(4,1);
-  c4->cd(1);
-  tautworc1->Draw();  
-  c4->cd(2);
-  tautworc2->Draw();  
-  c4->cd(3);
-  tautworc3->Draw();  
-  c4->cd(4);
-  tautworc4->Draw();
-  
-  TCanvas * c5 = new TCanvas();
-  c5->Divide(4,1);
-  c5->cd(1);
-  tauthreerc1->Draw();  
-  c5->cd(2);
-  tauthreerc2->Draw();  
-  c5->cd(3);
-  tauthreerc3->Draw();  
-  c5->cd(4);
-  tauthreerc4->Draw();
-  
-  
-  TCanvas * c6 = new TCanvas();
-  c6->Divide(4,1);
-  c6->cd(1);
-  tauoneb2c1->Draw();  
-  c6->cd(2);
-  tauoneb2c2->Draw();  
-  c6->cd(3);
-  tauoneb2c3->Draw();  
-  c6->cd(4);
-  tauoneb2c4->Draw();
-  
-  TCanvas * c7 = new TCanvas();
-  c7->Divide(4,1);
-  c7->cd(1);
-  tautwob2c1->Draw();  
-  c7->cd(2);
-  tautwob2c2->Draw();  
-  c7->cd(3);
-  tautwob2c3->Draw();  
-  c7->cd(4);
-  tautwob2c4->Draw();
-  
-  TCanvas * c8 = new TCanvas();
-  c8->Divide(4,1);  
-  c8->cd(1);
-  tauthreeb2c1->Draw();  
-  c8->cd(2);
-  tauthreeb2c2->Draw();  
-  c8->cd(3);
-  tauthreeb2c3->Draw();  
-  c8->cd(4);
-  tauthreeb2c4->Draw();
-  
-  TCanvas * c9 = new TCanvas();
-  c9->Divide(4,1);
-  c9->cd(1);
-  tautworb2c1->Draw();  
-  c9->cd(2);
-  tautworb2c2->Draw();  
-  c9->cd(3);
-  tautworb2c3->Draw();  
-  c9->cd(4);
-  tautworb2c4->Draw();
-  
-  TCanvas * c10 = new TCanvas();
-  c10->Divide(4,1);
-  c10->cd(1);
-  tauthreerb2c1->Draw();  
-  c10->cd(2);
-  tauthreerb2c2->Draw();  
-  c10->cd(3);
-  tauthreerb2c3->Draw();  
-  c10->cd(4);
-  tauthreerb2c4->Draw();
-  
-  TCanvas * c11 = new TCanvas();
-  c11->Divide(4,1);
-  c11->cd(1);
-  tauoneb3c1->Draw();  
-  c11->cd(2);
-  tauoneb3c2->Draw();  
-  c11->cd(3);
-  tauoneb3c3->Draw();  
-  c11->cd(4);
-  tauoneb3c4->Draw();
-  
-  TCanvas * c12 = new TCanvas();
-  c12->Divide(4,1);
-  c12->cd(1);
-  tautwob3c1->Draw();  
-  c12->cd(2);
-  tautwob3c2->Draw();  
-  c12->cd(3);
-  tautwob3c3->Draw();  
-  c12->cd(4);
-  tautwob3c4->Draw();
-  
-  
-  TCanvas * c13 = new TCanvas();
-  c13->Divide(4,1);
-  c13->cd(1);
-  tauthreeb3c1->Draw();  
-  c13->cd(2);
-  tauthreeb3c2->Draw();  
-  c13->cd(3);
-  tauthreeb3c3->Draw();  
-  c13->cd(4);
-  tauthreeb3c4->Draw();
-  
-  
-  
-  TCanvas * c15 = new TCanvas();
-  c15->Divide(4,1);
-  c15->cd(1);
-  tautworb3c1->Draw();  
-  c15->cd(2);
-  tautworb3c2->Draw();  
-  c15->cd(3);
-  tautworb3c3->Draw();  
-  c15->cd(4);
-  tautworb3c4->Draw();
-  
-  TCanvas * c16 = new TCanvas();
-  c16->Divide(4,1);
-  c16->cd(1);
-  tauthreerb3c1->Draw();  
-  c16->cd(2);
-  tauthreerb3c2->Draw();  
-  c16->cd(3);
-  tauthreerb3c3->Draw();  
-  c16->cd(4);
-  tauthreerb3c4->Draw();
-  
-  
-  TCanvas * c17 = new TCanvas();
-  c17->Divide(4,1);  
-  c17->cd(1);
-  tauoneb4c1->Draw();  
-  c17->cd(2);
-  tauoneb4c2->Draw();  
-  c17->cd(3);
-  tauoneb4c3->Draw();  
-  c17->cd(4);
-  tauoneb4c4->Draw();
-  
-  
-  TCanvas * c18 = new TCanvas();
-  c18->Divide(4,1);
-  c18->cd(1);
-  tautwob4c1->Draw();  
-  c18->cd(2);
-  tautwob4c2->Draw();  
-  c18->cd(3);
-  tautwob4c3->Draw();  
-  c18->cd(4);
-  tautwob4c4->Draw();
-  
-  
-  TCanvas * c19 = new TCanvas();
-  c19->Divide(4,1);
-  c19->cd(1);
-  tauthreeb4c1->Draw();  
-  c19->cd(2);
-  tauthreeb4c2->Draw();  
-  c19->cd(3);
-  tauthreeb4c3->Draw();  
-  c19->cd(4);
-  tauthreeb4c4->Draw();
-  
-  
-  TCanvas * c20 = new TCanvas();
-  c20->Divide(4,1);
-  c20->cd(1);
-  tautworb4c1->Draw();  
-  c20->cd(2);
-  tautworb4c2->Draw();  
-  c20->cd(3);
-  tautworb4c3->Draw();  
-  c20->cd(4);
-  tautworb4c4->Draw();
-  
-  
-  TCanvas * c21 = new TCanvas();
-  c21->Divide(4,1);
-  c21->cd(1);
-  tauthreerb4c1->Draw();  
-  c21->cd(2);
-  tauthreerb4c2->Draw();  
-  c21->cd(3);
-  tauthreerb4c3->Draw();  
-  c21->cd(4);
-  tauthreerb4c4->Draw();
-  
-  
-  TCanvas * c22 = new TCanvas();
-  c22->Divide(4,1);
-  c22->cd(1);
-  tauoneb5c1->Draw();  
-  c22->cd(2);
-  tauoneb5c2->Draw();  
-  c22->cd(3);
-  tauoneb5c3->Draw();  
-  c22->cd(4);
-  tauoneb5c4->Draw();
-  
-  
-  TCanvas * c23 = new TCanvas();
-  c23->Divide(4,1);  
-  c23->cd(1);
-  tautwob5c1->Draw();  
-  c23->cd(2);
-  tautwob5c2->Draw();  
-  c23->cd(3);
-  tautwob5c3->Draw();  
-  c23->cd(4);
-  tautwob5c4->Draw();
-  
-  
-  
-  TCanvas * c24 = new TCanvas();
-  c24->Divide(4,1);  
-  c24->cd(1);
-  tauthreeb5c1->Draw();  
-  c24->cd(2);
-  tauthreeb5c2->Draw();  
-  c24->cd(3);
-  tauthreeb5c3->Draw();  
-  c24->cd(4);
-  tauthreeb5c4->Draw();
-  
-  TCanvas * c25 = new TCanvas();
-  c25->Divide(4,1);
-  c25->cd(1);
-  tautworb5c1->Draw();  
-  c25->cd(2);
-  tautworb5c2->Draw();  
-  c25->cd(3);
-  tautworb5c3->Draw();  
-  c25->cd(4);
-  tautworb5c4->Draw();
-  
-  TCanvas * c26 = new TCanvas();
-  c26->Divide(4,1);
-  c26->cd(1);
-  tauthreerb5c1->Draw();
-  c26->cd(2);
-  tauthreerb5c2->Draw();
-  c26->cd(3);
-  tauthreerb5c3->Draw();
-  c26->cd(4);
-  tauthreerb5c4->Draw();
-  
-  TCanvas * c27 = new TCanvas();
-  c27->Divide(4,1);
-  c27->cd(1);
-  tauoneb6c1->Draw();  
-  c27->cd(2);
-  tauoneb6c2->Draw();  
-  c27->cd(3);
-  tauoneb6c3->Draw();  
-  c27->cd(4);
-  tauoneb6c4->Draw();
-  
-  TCanvas * c28 = new TCanvas();
-  c28->Divide(4,1);
-  c28->cd(1);
-  tautwob6c1->Draw();
-  c28->cd(2);
-  tautwob6c2->Draw();
-  c28->cd(3);
-  tautwob6c3->Draw();
-  c28->cd(4);
-  tautwob6c4->Draw();
-  
-  TCanvas * c29 = new TCanvas();
-  c29->Divide(4,1);
-  c29->cd(1);
-  tauthreeb6c1->Draw();  
-  c29->cd(2);
-  tauthreeb6c2->Draw();  
-  c29->cd(3);
-  tauthreeb6c3->Draw();  
-  c29->cd(4);
-  tauthreeb6c4->Draw();
-  
-  TCanvas * c30 = new TCanvas();
-  c30->Divide(4,1);
-  c30->cd(1);
-  tautworb6c1->Draw();
-  c30->cd(2);
-  tautworb6c2->Draw();
-  c30->cd(3);
-  tautworb6c3->Draw();
-  c30->cd(4);
-  tautworb6c4->Draw();
-  
-  TCanvas * c31 = new TCanvas();
-  c31->Divide(4,1);
-  c31->cd(1);
-  tauthreerb6c1->Draw();
-  c31->cd(2);
-  tauthreerb6c2->Draw();
-  c31->cd(3);
-  tauthreerb6c3->Draw();
-  c31->cd(4);
-  tauthreerb6c4->Draw();
-
 
   outputfile->Write();
   outputfile->Close();
 }
 
-
-
-
-int main(int argc, char *argv[])
+int main()
 {
   cenpfvspp();
   return 0;
