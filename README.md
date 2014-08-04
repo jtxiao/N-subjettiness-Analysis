@@ -30,10 +30,15 @@ tar xvfz fjcontrib-1.013.tar.gz
 
 cd fjcontrib-1.013/
 
-./configure --fastjet-config=$PWD/../fastjet-3.06/fastjet-config                  
+./configure --fastjet-config=$PWD/../fastjet-3.0.6/fastjet-config                  
 
 make -j 20
 
 make check  
   
 make install
+
+* HiForestAnalysis helper class
+
+git clone git@github.com:CmsHI/HiForestAnalysis.git
+
