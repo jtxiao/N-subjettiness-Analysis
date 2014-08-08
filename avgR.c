@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 #include "HiForestAnalysis-master/hiForest.h"
-=======
-#include "HiForestAnalysis/hiForest.h"
->>>>>>> 39c1a302444fd6c1c51570d5d743610254915a59
 #include <TH1D.h>
 #include <TFile.h>
 #include <TCanvas.h>
@@ -19,10 +15,7 @@
 #include "fastjet/contrib/Njettiness.hh"
 #include "fastjet/contrib/NjettinessPlugin.hh"
 #include "fastjet/contrib/WinnerTakeAllRecombiner.hh"
-<<<<<<< HEAD
 #include "HiForestAnalysis-master/commonUtility.h"
-=======
->>>>>>> 39c1a302444fd6c1c51570d5d743610254915a59
 #include <fstream>
 #include "TLorentzVector.h"
 #include <vector>
@@ -67,19 +60,11 @@ void avgR()
   
   int size = 0;
   
-<<<<<<< HEAD
   double alpha = 1.0;
   
   WinnerTakeAllRecombiner wta_alpha(alpha);
   WinnerTakeAllRecombiner *wta;
   wta = &wta_alpha;
-=======
-  // double alpha = 1.0;
-  
-  // WinnerTakeAllRecombiner wta_alpha(alpha);
-  // WinnerTakeAllRecombiner *wta;
-  // wta = &wta_alpha;
->>>>>>> 39c1a302444fd6c1c51570d5d743610254915a59
   
   
 
@@ -155,27 +140,8 @@ void avgR()
         {
           double part_phi = constituents[j].phi();
           double part_eta = constituents[j].eta();
-<<<<<<< HEAD
          
           double distance = getDR(jet_eta, jet_phi, part_eta, part_phi);
-=======
-          double eta_squared = pow((part_eta - jet_eta),2);
-          if(part_phi-jet_phi > pi)
-          { 
-            phi = part_phi-jet_phi-(2*pi);
-          }
-          else if(part_phi-jet_phi<= -pi)
-          {
-            phi = part_phi-jet_phi+(2*pi);
-          }
-          else
-          {
-            phi = fabs(part_phi-jet_phi);
-          }
-          double phi_squared = pow(phi, 2);
-          double distance = sqrt(phi_squared+eta_squared);
-          cout<<distance<<endl;
->>>>>>> 39c1a302444fd6c1c51570d5d743610254915a59
           R_vect.push_back(distance*constituents[j].perp2());
           pt_vect.push_back(constituents[j].perp2());
         }
@@ -190,12 +156,8 @@ void avgR()
         
         double avgR = R_sum/pt_sum;
         
-<<<<<<< HEAD
         cout<<"avgR: "<<avgR<<endl;
         
-=======
-        delR->Fill(centrality, avgR);
->>>>>>> 39c1a302444fd6c1c51570d5d743610254915a59
        
         Rm->Fill(avgR);
         
