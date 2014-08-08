@@ -150,8 +150,8 @@ void avgR()
         double pt_sum = 0.0;
         for(int q = 0; q < R_vect.size(); q++)
         {
-          R_sum += R_vect[i];
-          pt_sum += pt_vect[i];
+          R_sum += R_vect[q];
+          pt_sum += pt_vect[q];
         }
         
         double avgR = R_sum/pt_sum;
